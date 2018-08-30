@@ -1,0 +1,213 @@
+---
+title: "Creation of 2014 GSS Data Set"
+author: "Christopher Prener, Ph.D."
+date: '(`r format(Sys.time(), "%B %d, %Y")`)'
+output: 
+  github_document: default
+  html_notebook: default 
+---
+
+## Introduction
+This notebook creates the small data set drawn from the 2014 GSS that will be used for August/September 2018 updates to the [`testDriveR`](https://github.com/chris-prener/testDriveR) package.
+
+## Dependencies
+This notebook relies on the following package dependencies:
+
+```{r load-package}
+## tidyverse packages
+library(dplyr)         # data wrangling
+library(forcats)       # factor wrangling
+
+## other packages
+library(foreign)       # read statistics data files
+library(here)          # file path management
+```
+
+It also has two function dependencies based on the originally exported code that is located in the `source/` folder in the file `GSS.r`. That `GSS.r` file has been broken up into two pieces:
+
+1. `read_dat.R` contains a renamed version of the original `read.dat()` function in `GSS.r`
+2. `read_dct.R` contains a renamed version of the original `read.dct()` function in `GSS.r`
+
+```{r load-functions}
+source(here("source", "read_dat.R"))
+source(here("source", "read_dct.R"))
+```
+
+## Load Raw Data
+These data were exported from [NORC's GSS website](http://gss.norc.org) along with code for making initial edits to the data themselves. The originally exported data are available in the `data/` folder, and this notebook contains the sequence of functions on lines 33 to 36 of `GSS.r` in the `source/` folder.
+
+```{r read-data}
+GSS_metadata <- read_dct(here("data", "GSS.dct"))
+GSS_ascii <- read_dat(here("data", "GSS.dat"), GSS_metadata)
+attr(GSS_ascii, "col.label") <- GSS_metadata[["ColLabel"]]
+GSS <- GSS_ascii
+```
+
+## Reformat Variables
+Since all of the variables are numeric, this section reformats them as factor when necessary. The first chunk cleans the `BALLOT`, `INCOM16`, `REG16`, `RACE`, and `SEX` variables for the clean version of the data:
+
+```{r recode-1}
+GSS %>%
+  mutate(BALLOT = ifelse(BALLOT == 0, NA, BALLOT)) %>%
+  mutate(BALLOT = fct_recode(as.factor(BALLOT),
+    "Ballot a" = "1",
+    "Ballot b" = "2",
+    "Ballot c" = "3",
+    "Ballot d" = "4"
+  )) %>%
+  mutate(INCOM16 = ifelse(INCOM16 == -1 | INCOM16 >= 7, NA, INCOM16)) %>%
+  mutate(INCOM16 = fct_recode(as.factor(INCOM16),
+    "Far below average" = "1",
+    "Below average"     = "2",
+    "Average"           = "3",
+    "Above average"     = "4",
+    "Far above average" = "5"
+  )) %>%
+  mutate(REG16 = fct_recode(as.factor(REG16),
+    "Foreign"            = "0",
+    "New england"        = "1",
+    "Middle atlantic"    = "2",
+    "East north central" = "3",
+    "West north central" = "4",
+    "South atlantic"     = "5",
+    "East south central" = "6",
+    "West south central" = "7",
+    "Mountain"           = "8",
+    "Pacific"            = "9"
+  )) %>%
+  mutate(RACE = ifelse(RACE == 0, NA, RACE)) %>%
+  mutate(RACE = fct_recode(as.factor(RACE),
+    "White" = "1",
+    "Black" = "2",
+    "Other" = "3"
+  )) %>%
+  mutate(SEX = ifelse(SEX == 0, NA, SEX)) %>%
+  mutate(SEX = fct_recode(as.factor(SEX),
+    "Male"   = "1",
+    "Female" = "2"
+  )) -> gss14
+```
+
+The second chunk cleans the `SPDEG`, `MADEG`, `PADEG`, and `DEGREE` variables for the clean version of the data:
+
+```{r recode-2}
+gss14 %>%
+  mutate(SPDEG = ifelse(SPDEG >= 7, NA, SPDEG)) %>%
+  mutate(SPDEG = fct_recode(as.factor(SPDEG),
+    "Lt high school" = "0",
+    "High school"    = "1",
+    "Junior college" = "2",
+    "Bachelor"       = "3",
+    "Graduate"       = "4"
+  )) %>%
+  mutate(MADEG = ifelse(MADEG >= 7, NA, MADEG)) %>%
+  mutate(MADEG = fct_recode(as.factor(MADEG),
+    "Lt high school" = "0",
+    "High school"    = "1",
+    "Junior college" = "2",
+    "Bachelor"       = "3",
+    "Graduate"       = "4"
+  )) %>%
+  mutate(PADEG = ifelse(PADEG >= 7, NA, PADEG)) %>%
+  mutate(PADEG = fct_recode(as.factor(PADEG),
+    "Lt high school" = "0",
+    "High school"    = "1",
+    "Junior college" = "2",
+    "Bachelor"       = "3",
+    "Graduate"       = "4"
+  )) %>%
+  mutate(DEGREE = ifelse(DEGREE >= 7, NA, DEGREE)) %>%
+  mutate(DEGREE = fct_recode(as.factor(DEGREE),
+    "Lt high school" = "0",
+    "High school"    = "1",
+    "Junior college" = "2",
+    "Bachelor"       = "3",
+    "Graduate"       = "4"
+  )) -> gss14
+```
+
+The third chunk cleans the `CHILDS`, `SPWRKSLF`, `SPHRS1`, `MARITAL`, `WRKSLF`, and `HRS1` variables for the clean version of the data:
+
+```{r recode-3}
+gss14 %>%
+  mutate(CHILDS = ifelse(CHILDS == 9, NA, CHILDS)) %>%
+  mutate(CHILDS = fct_recode(as.factor(CHILDS),
+    "8 or more" = "8"
+  )) %>%
+  mutate(SPWRKSLF = ifelse(SPWRKSLF == 0 | SPWRKSLF >= 8, NA, SPWRKSLF)) %>%
+  mutate(SPWRKSLF = fct_recode(as.factor(SPWRKSLF),
+    "Self-employed" = "1",
+    "Someone else"  = "2"
+  )) %>%
+  mutate(WRKSLF = ifelse(WRKSLF == 0 | WRKSLF >= 8, NA, WRKSLF)) %>%
+  mutate(WRKSLF = fct_recode(as.factor(WRKSLF),
+    "Self-employed" = "1",
+    "Someone else"  = "2"
+  )) %>%
+  mutate(SPHRS1 = ifelse(SPHRS1 == -1 | SPHRS1 >= 98, NA, SPHRS1)) %>%
+  mutate(HRS1 = ifelse(HRS1 == -1 | HRS1 >= 98, NA, HRS1)) %>%
+  mutate(MARITAL = ifelse(MARITAL == 9, NA, MARITAL)) %>%
+  mutate(MARITAL = fct_recode(as.factor(MARITAL),
+    "Married"       = "1",
+    "Widowed"       = "2",
+    "Divorced"      = "3",
+    "Separated"     = "4",
+    "Never married" = "5"
+  )) -> gss14
+```
+
+The final chunk cleans the `WRKSTAT` and `INCOME06` variables for the clean version of the data:
+
+```{r recode-4}
+gss14 %>%
+  mutate(WRKSTAT = ifelse(WRKSTAT == 0 | WRKSTAT == 9, NA, WRKSTAT)) %>%
+  mutate(WRKSTAT = fct_recode(as.factor(WRKSTAT),
+    "Working fulltime" = "1",
+    "Working parttime" = "2",
+    "Temp not working" = "3",
+    "Unempl, laid off" = "4",
+    "Retired"          = "5",
+    "School"           = "6",
+    "Keeping house"    = "7",
+    "Other"            = "8"
+  )) %>%
+  mutate(INCOME06 = ifelse(INCOME06 == 0 | INCOME06 >= 26, NA, INCOME06)) %>%
+  mutate(INCOME06 = fct_recode(as.factor(INCOME06),
+    "Under $1 000"       = "1",
+    "$1 000 to 2 999"    = "2",
+    "$3 000 to 3 999"    = "3",
+    "$4 000 to 4 999"    = "4",
+    "$5 000 to 5 999"    = "5",
+    "$6 000 to 6 999"    = "6",
+    "$7 000 to 7 999"    = "7",
+    "$8 000 to 9 999"    = "8",
+    "$10000 to 12499"    = "9",
+    "$12500 to 14999"    = "10",
+    "$15000 to 17499"    = "11",
+    "$17500 to 19999"    = "12",
+    "$20000 to 22499"    = "13",
+    "$22500 to 24999"    = "14",
+    "$25000 to 29999"    = "15",
+    "$30000 to 34999"    = "16",
+    "$35000 to 39999"    = "17",
+    "$40000 to 49999"    = "18",
+    "$50000 to 59999"    = "19",
+    "$60000 to 74999"    = "20",
+    "$75000 to $89999"   = "21",
+    "$90000 to $109999"  = "22",
+    "$110000 to $129999" = "23",
+    "$130000 to $149999" = "24",
+    "$150000 or over"    = "25"
+  )) -> gss14
+```
+
+## Export Data
+This final section creates the package versions of the data:
+
+```{r export-data}
+save(gss14, file = here("data", "gss14.rda"))
+
+gss14_simple <- GSS
+save(gss14_simple, file = here("data", "gss14_simple.rda"))
+```
+
